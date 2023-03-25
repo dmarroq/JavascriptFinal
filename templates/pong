@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Pong!</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            align-items: center;
+            justify-content: center;
+            background: gray;
+        }
+
+        h1 {
+            font-size: 48px;
+            margin-top: 50px;
+        }
+
+        #canvas-container {
+            position: relative;
+        }
+
+        #canvas {
+            margin-top: 30px;
+            border: 1px solid black;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #instructions {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+        }
+
+        #instructions-toggle {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            margin: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+    </style>
+  </head>
+
+  <body>
+    <h1>Pong!</h1>
+    <canvas id="canvas" width="600" height="400"></canvas>
+    <button id="instructions-toggle">Instructions</button>
+    <div id="instructions">
+      <h2>Instructions</h2>
+      <p>Player uses the W and S keys to move up and down.</p>
+      <p>The game ends when one player reaches 10 points.</p>
+    </div>
+
+    <script>
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+
+      let ballX = canvas.width / 2;
+      let ballY = canvas.height / 2;
+      let ballSpeedX = 5;
+      let ballSpeedY = 5;
+
+      let paddle1Y = canvas.height / 2 - 50;
+      let paddle2Y = canvas.height / 2 - 50;
+      const PADDLE_HEIGHT = 100;
+      const PADDLE_THICKNESS = 10;
+
+      let player1Score = 0;
+      let player2Score = 0;
+
+      const WINNING_SCORE = 10;
+
+      function drawNet() {
+        for (let i = 0; i < canvas.height; i += 40) {
+          drawRect(canvas.width / 2 - 1, i, 2, 20, 'white');
+        }
+      }
+
+      function drawRect(leftX, topY, width, height, color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(leftX, topY, width, height);
+      }
+
+      function drawCircle(centerX, centerY, radius, color) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2, true);
+        ctx.fill();
+      }
+
+      function drawText(text, x, y, color) {
+        ctx.fillStyle = color;
+        ctx.fillText(text, x, y);
+      }
+
+      function resetBall() {
+        ballX = canvas.width / 2;
+        ballY = canvas.height / 2;
+        ballSpeedX = -ballSpeedX;
+        ballSpeedY = Math.floor(Math.random() * 10) - 5;
+      }
+
+      function computerMovement() {
+        const paddle2YCenter = paddle2Y + PADDLE_HEIGHT / 2
+        const sensitivity = 10;
+    if (paddle2YCenter < ballY - sensitivity) {
+      paddle2Y += 6;
+    } else if (paddle2YCenter > ballY + sensitivity) {
+      paddle2Y -= 6;
+    }
+  }
+
+  function moveEverything() {
+  if (player1Score >= WINNING_SCORE || player2Score >= WINNING_SCORE) {
+    cancelAnimationFrame(animationId);
+    const winner = player1Score > player2Score ? "Player 1" : "Player 2";
+    alert(`${winner} wins!`);
+    return;
+  }
+
+  computerMovement();
+
+  ballX += ballSpeedX;
+  ballY += ballSpeedY;
+
+  // Check collision with left paddle
+  if (ballX < 0 + PADDLE_THICKNESS && ballY > paddle1Y && ballY < paddle1Y + PADDLE_HEIGHT) {
+    ballX = 0 + PADDLE_THICKNESS;
+    ballSpeedX = -ballSpeedX;
+    const deltaY = ballY - (paddle1Y + PADDLE_HEIGHT / 2);
+    ballSpeedY = deltaY * 0.35;
+  } else if (ballX < 0) {
+    player2Score++;
+    resetBall();
+  }
+
+  // Check collision with right paddle
+  if (ballX > canvas.width - PADDLE_THICKNESS && ballY > paddle2Y && ballY < paddle2Y + PADDLE_HEIGHT) {
+    ballX = canvas.width - PADDLE_THICKNESS;
+    ballSpeedX = -ballSpeedX;
+    const deltaY = ballY - (paddle2Y + PADDLE_HEIGHT / 2);
+    ballSpeedY = deltaY * 0.35;
+  } else if (ballX > canvas.width) {
+    player1Score++;
+    resetBall();
+  }
+
+  if (ballY < 0) {
+    ballSpeedY = -ballSpeedY;
+  }
+
+  if (ballY > canvas.height) {
+    ballSpeedY = -ballSpeedY;
+  }
+}
+
+
+  function drawEverything() {
+    drawRect(0, 0, canvas.width, canvas.height, 'black');
+
+    drawNet();
+
+    drawRect(0, paddle1Y, PADDLE_THICKNESS, PADDLE_HEIGHT, 'white');
+    drawRect(
+      canvas.width - PADDLE_THICKNESS,
+      paddle2Y,
+      PADDLE_THICKNESS,
+      PADDLE_HEIGHT,
+      'white'
+    );
+
+    drawCircle(ballX, ballY, 10, 'white');
+
+    drawText(player1Score, 100, 100, 'white');
+    drawText(player2Score, canvas.width - 100, 100, 'white');
+  }
+
+  function handleMouseClick() {
+  if (player1Score >= WINNING_SCORE || player2Score >= WINNING_SCORE) {
+    player1Score = 0;
+    player2Score = 0;
+  }
+
+  animationId = requestAnimationFrame(animate);
+}
+
+
+  function handleKeyDown(evt) {
+    if (evt.key === 'w' || evt.key === 'W') {
+      paddle1Y = Math.max(paddle1Y - 40, 0);
+    } else if (evt.key === 's' || evt.key === 'S') {
+      paddle1Y = Math.min(paddle1Y + 40, canvas.height - PADDLE_HEIGHT);
+    }
+    if (evt.key === 'ArrowUp') {
+      paddle2Y = Math.max(paddle2Y - 20, 0);
+    } else if (evt.key === 'ArrowDown') {
+      paddle2Y = Math.min(paddle2Y + 20, canvas.height - PADDLE_HEIGHT);
+    }
+  }
+
+  document.addEventListener('keydown', handleKeyDown);
+
+  canvas.addEventListener('mousedown', handleMouseClick);
+
+  document
+    .getElementById('instructions-toggle')
+    .addEventListener('click', function () {
+      const instructions = document.getElementById('instructions');
+      instructions.style.display =
+        instructions.style.display === 'none' ? 'block' : 'none';
+    });
+
+  setInterval(function () {
+    moveEverything();
+    drawEverything();
+  }, 1000 / 60);
+</script>
+</body>
+</html>
